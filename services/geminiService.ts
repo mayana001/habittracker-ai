@@ -1,4 +1,4 @@
-import { GoogleGenerativeAI } from '@google/genai';
+import { GoogleGenAI } from '@google/genai';
 import { SYSTEM_INSTRUCTION } from '../constants';
 import { Habit, DailyLog } from '../types';
 
@@ -10,7 +10,7 @@ const getAIClient = () => {
     console.error("VITE_GEMINI_API_KEY is missing");
     throw new Error("API Key not configured. Please check your environment variables.");
   }
-  return new GoogleGenerativeAI(API_KEY);
+  return new GoogleGenAI({ apiKey: API_KEY });
 };
 
 export const initializeChat = (habits: Habit[], logs: DailyLog[]) => {
@@ -45,18 +45,12 @@ export const sendMessageToAI = async (message: string, habits: Habit[], logs: Da
       User Question: ${message}
     `;
 
-    const model = client.getGenerativeModel({ 
-      model: "gemini-1.5-flash",
-      generationConfig: {
-        temperature: 0.7,
-        maxOutputTokens: 1000,
-      }
+    const response = await client.models.generateContent({
+      model: 'gemini-2.0-flash',
+      contents: fullPrompt,
     });
 
-    const result = await model.generateContent(fullPrompt);
-    const response = await result.response;
-    
-    return response.text();
+    return response.text;
 
   } catch (error: any) {
     console.error('AI Error:', error);
@@ -70,37 +64,5 @@ export const sendMessageToAI = async (message: string, habits: Habit[], logs: Da
     } else {
       throw new Error(`AI service error: ${error.message || 'Unknown error'}`);
     }
-  }
-};
-
-export const generateAnalysis = async (habits: Habit[], logs: DailyLog[]): Promise<string> => {
-  try {
-    const client = getAIClient();
-    
-    const prompt = `
-      Analyze this habit tracking data and provide:
-      1. Performance summary
-      2. Key trends
-      3. 2 specific recommendations
-      
-      Habits: ${JSON.stringify(habits, null, 2)}
-      Logs: ${JSON.stringify(logs.slice(-14), null, 2)}
-    `;
-
-    const model = client.getGenerativeModel({ 
-      model: "gemini-1.5-flash",
-      generationConfig: {
-        temperature: 0.5,
-        maxOutputTokens: 800,
-      }
-    });
-
-    const result = await model.generateContent(prompt);
-    const response = await result.response;
-    
-    return response.text();
-  } catch (error) {
-    console.error('Analysis generation error:', error);
-    throw error;
   }
 };
