@@ -1,4 +1,4 @@
-import { GoogleGenAI } from '@google/genai';
+import { GoogleGenAI } from "@google/genai";
 import { SYSTEM_INSTRUCTION } from '../constants';
 import { Habit, DailyLog } from '../types';
 
@@ -7,7 +7,7 @@ const API_KEY = import.meta.env.VITE_GEMINI_API_KEY;
 
 const getAIClient = () => {
   if (!API_KEY) {
-    console.error("VITE_GEMINI_API_KEY is missing");
+    console.error("VITE_GEMINI_API_KEY is missing in environment variables.");
     throw new Error("API Key not configured. Please check your environment variables.");
   }
   return new GoogleGenAI({ apiKey: API_KEY });
@@ -67,29 +67,40 @@ export const sendMessageToAI = async (message: string, habits: Habit[], logs: Da
   }
 };
 
-export const generateAvatarImage = async (prompt: string): Promise<string | null> => {
+export const generateAnalysis = async (habits: Habit[], logs: DailyLog[]): Promise<string> => {
   try {
     const client = getAIClient();
     
+    const habitsContext = habits.map(h => 
+      `${h.title}: ${h.streak} day streak, completed ${h.completedDates.length} times`
+    ).join('\n');
+
+    const recentLogs = logs.slice(-14);
+    const logsContext = recentLogs.map(log => 
+      `${log.date}: Mood ${log.mood || 'N/A'}, Energy ${log.energyLevel || 'N/A'}`
+    ).join('\n');
+
+    const prompt = `
+      Analyze this habit tracking data and provide:
+      1. Performance summary
+      2. Key trends
+      3. 2 specific recommendations for improvement
+      
+      Habits:
+      ${habitsContext}
+      
+      Recent Logs (Last 14 days):
+      ${logsContext}
+    `;
+
     const response = await client.models.generateContent({
-      model: 'gemini-2.0-flash-exp-image-generation',
-      contents: {
-        parts: [
-          {
-            text: `Generate a simple avatar image based on this description: ${prompt}. Make it clean and minimalist.`
-          }
-        ]
-      },
+      model: 'gemini-2.0-flash',
+      contents: prompt,
     });
 
-    // For now, return a placeholder since image generation is complex
-    // In a real app, you'd handle the image data properly
-    console.log('Avatar generation requested for:', prompt);
-    return null;
-
-  } catch (error: any) {
-    console.error('Avatar generation error:', error);
-    // Return null instead of throwing to avoid breaking the settings page
-    return null;
+    return response.text;
+  } catch (error) {
+    console.error('Analysis generation error:', error);
+    throw error;
   }
 };
