@@ -1,0 +1,7 @@
+{
+  "name": "HabitTracker AI",
+  "description": "An intelligent personal assistant for tracking habits, analyzing behavior, and coaching via Gemini AI.",
+  "requestFramePermissions": [
+    "camera"
+  ]
+}
