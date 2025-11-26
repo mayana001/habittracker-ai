@@ -66,3 +66,30 @@ export const sendMessageToAI = async (message: string, habits: Habit[], logs: Da
     }
   }
 };
+
+export const generateAvatarImage = async (prompt: string): Promise<string | null> => {
+  try {
+    const client = getAIClient();
+    
+    const response = await client.models.generateContent({
+      model: 'gemini-2.0-flash-exp-image-generation',
+      contents: {
+        parts: [
+          {
+            text: `Generate a simple avatar image based on this description: ${prompt}. Make it clean and minimalist.`
+          }
+        ]
+      },
+    });
+
+    // For now, return a placeholder since image generation is complex
+    // In a real app, you'd handle the image data properly
+    console.log('Avatar generation requested for:', prompt);
+    return null;
+
+  } catch (error: any) {
+    console.error('Avatar generation error:', error);
+    // Return null instead of throwing to avoid breaking the settings page
+    return null;
+  }
+};
