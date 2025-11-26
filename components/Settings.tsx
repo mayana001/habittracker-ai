@@ -1,14 +1,11 @@
-
-
 import React, { useState, useRef } from 'react';
 import { UserSettings, Language } from '../types';
 import { 
   User, Globe, Shield, BrainCircuit, 
   ChevronDown, ChevronRight, LogOut, 
   Download, Trash2, Smartphone, Bell,
-  Camera, Sparkles, X, Upload, Check, Loader2, Image as ImageIcon
+  Camera, X, Check, Image as ImageIcon
 } from 'lucide-react';
-import { generateAvatarImage } from '../services/geminiService';
 
 interface SettingsProps {
   settings: UserSettings;
@@ -23,10 +20,7 @@ const Settings: React.FC<SettingsProps> = ({ settings, onUpdateSettings, onExpor
   
   // Avatar Modal State
   const [showAvatarModal, setShowAvatarModal] = useState(false);
-  const [avatarMode, setAvatarMode] = useState<'upload' | 'ai'>('ai');
   const [previewAvatar, setPreviewAvatar] = useState<string | null>(null);
-  const [aiPrompt, setAiPrompt] = useState('');
-  const [isGenerating, setIsGenerating] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const toggleSection = (id: string) => {
@@ -71,37 +65,17 @@ const Settings: React.FC<SettingsProps> = ({ settings, onUpdateSettings, onExpor
     }
   };
 
-  const handleGenerateAvatar = async () => {
-    if (!aiPrompt.trim()) return;
-    setIsGenerating(true);
-    try {
-      const image = await generateAvatarImage(aiPrompt);
-      if (image) {
-        setPreviewAvatar(image);
-      } else {
-        alert("Failed to generate image. Please try again.");
-      }
-    } catch (error) {
-      console.error("Failed to generate avatar:", error);
-      alert("Error generating avatar.");
-    } finally {
-      setIsGenerating(false);
-    }
-  };
-
   const handleSaveAvatar = () => {
     if (previewAvatar) {
       handleChange('avatar', previewAvatar);
       setShowAvatarModal(false);
       setPreviewAvatar(null);
-      setAiPrompt('');
     }
   };
 
   const handleCancelAvatar = () => {
     setShowAvatarModal(false);
     setPreviewAvatar(null);
-    setAiPrompt('');
   };
 
   const SectionHeader = ({ id, icon: Icon, title, description }: { id: string, icon: any, title: string, description: string }) => (
@@ -360,31 +334,6 @@ const Settings: React.FC<SettingsProps> = ({ settings, onUpdateSettings, onExpor
              </div>
              
              <div className="p-6 space-y-6">
-                <div className="flex gap-2 p-1 bg-gray-50 rounded-xl">
-                   <button 
-                     onClick={() => setAvatarMode('ai')}
-                     className={`flex-1 py-2 px-4 rounded-lg text-sm font-medium transition-all ${
-                       avatarMode === 'ai' ? 'bg-white shadow-sm text-primary' : 'text-gray-500 hover:text-gray-700'
-                     }`}
-                   >
-                     <div className="flex items-center justify-center gap-2">
-                       <Sparkles size={16} />
-                       {t('generateAI')}
-                     </div>
-                   </button>
-                   <button 
-                     onClick={() => setAvatarMode('upload')}
-                     className={`flex-1 py-2 px-4 rounded-lg text-sm font-medium transition-all ${
-                       avatarMode === 'upload' ? 'bg-white shadow-sm text-primary' : 'text-gray-500 hover:text-gray-700'
-                     }`}
-                   >
-                     <div className="flex items-center justify-center gap-2">
-                       <Upload size={16} />
-                       {t('uploadPhoto')}
-                     </div>
-                   </button>
-                </div>
-
                 {/* Preview Area */}
                 <div className="flex justify-center">
                     <div className="w-32 h-32 rounded-full bg-gray-100 border-4 border-white shadow-lg overflow-hidden flex items-center justify-center">
@@ -397,46 +346,22 @@ const Settings: React.FC<SettingsProps> = ({ settings, onUpdateSettings, onExpor
                     </div>
                 </div>
 
-                {avatarMode === 'ai' ? (
-                   <div className="space-y-3">
-                      <label className="text-xs font-semibold text-gray-500 uppercase">{t('avatarDescription')}</label>
-                      <div className="flex gap-2">
+                <div className="space-y-3">
+                    <div 
+                    onClick={() => fileInputRef.current?.click()}
+                    className="border-2 border-dashed border-gray-200 rounded-2xl p-8 flex flex-col items-center justify-center cursor-pointer hover:border-primary/50 hover:bg-gray-50 transition-all text-gray-400 hover:text-primary"
+                    >
+                        <ImageIcon size={32} className="mb-2" />
+                        <span className="text-sm font-medium">{t('uploadPhoto')}</span>
                         <input 
-                           type="text" 
-                           value={aiPrompt} 
-                           onChange={(e) => setAiPrompt(e.target.value)}
-                           placeholder={t('avatarPromptPlaceholder')}
-                           className="flex-1 p-3 bg-gray-50 border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none"
-                           disabled={isGenerating}
-                        />
-                        <button 
-                           onClick={handleGenerateAvatar}
-                           disabled={isGenerating || !aiPrompt.trim()}
-                           className="bg-primary text-white p-3 rounded-xl hover:bg-secondary disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-                        >
-                           {isGenerating ? <Loader2 size={20} className="animate-spin" /> : <Sparkles size={20} />}
-                        </button>
-                      </div>
-                      {isGenerating && <p className="text-xs text-center text-primary animate-pulse">{t('generating')}</p>}
-                   </div>
-                ) : (
-                   <div className="space-y-3">
-                      <div 
-                        onClick={() => fileInputRef.current?.click()}
-                        className="border-2 border-dashed border-gray-200 rounded-2xl p-8 flex flex-col items-center justify-center cursor-pointer hover:border-primary/50 hover:bg-gray-50 transition-all text-gray-400 hover:text-primary"
-                      >
-                         <ImageIcon size={32} className="mb-2" />
-                         <span className="text-sm font-medium">{t('uploadPhoto')}</span>
-                         <input 
-                           ref={fileInputRef}
-                           type="file" 
-                           accept="image/*" 
-                           className="hidden" 
-                           onChange={handleFileUpload} 
-                        />
-                      </div>
-                   </div>
-                )}
+                        ref={fileInputRef}
+                        type="file" 
+                        accept="image/*" 
+                        className="hidden" 
+                        onChange={handleFileUpload} 
+                    />
+                    </div>
+                </div>
              </div>
 
              <div className="p-6 pt-0 flex gap-3">
